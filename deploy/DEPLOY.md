@@ -56,21 +56,32 @@ python scripts/verify_llm.py \
 
 ## 3. Backend — Railway
 
-The backend is a self-contained container ([`backend/Dockerfile`](../backend/Dockerfile)):
+Railway runs **two services**: the backend (from `backend/Dockerfile`) and an
+**Ollama sidecar** for embeddings — the cloud backend can't reach your local
+Ollama.
 
-1. Railway → **New Project** → **Deploy from GitHub repo**.
-2. Set **Root Directory** to `backend` (so the Dockerfile's relative `COPY`
-   paths resolve against `backend/`).
-3. Railway auto-detects `backend/Dockerfile` and injects `$PORT`; the image's
-   `CMD` already listens on `${PORT:-8000}`.
-4. Add these env vars on the service (from `.env.production.example`):
+### 3a. Ollama sidecar (embeddings)
 
-   | Var | Cloud value |
+1. Railway → your project → **New service → Deploy from image** → `ollama/ollama`.
+2. Attach a **volume** mounted at `/root/.ollama` (so the model persists across restarts).
+3. Start command: `sh -c "ollama pull nomic-embed-text && ollama serve"`.
+4. Name the service **`ollama`** — that becomes its internal hostname.
+
+### 3b. Backend
+
+1. **New service → Deploy from GitHub repo** → pick the repo.
+2. Set **Root Directory** to `backend` (so the Dockerfile's `COPY` paths resolve against `backend/`).
+3. Railway auto-detects `backend/Dockerfile` and injects `$PORT`; the image's `CMD` already listens on `${PORT:-8000}`.
+4. Add these env vars:
+
+   | Var | Value |
    |---|---|
    | `LLM_BASE_URL` | `https://api.runpod.ai/v2/<ID>/openai/v1` |
    | `LLM_MODEL` | `NousResearch/Meta-Llama-3.1-8B-Instruct` |
-   | `EMBEDDING_BASE_URL` | *(leave empty — local Ollama)* |
+   | `LLM_API_KEY` | your RunPod API key |
+   | `EMBEDDING_BASE_URL` | `http://ollama:11434/v1` (the sidecar) |
    | `EMBEDDING_MODEL` | `nomic-embed-text` |
+   | `EMBEDDING_API_KEY` | `ollama` |
    | `DATABASE_URL` | Supabase direct connection string |
 
 ---
