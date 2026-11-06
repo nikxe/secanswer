@@ -21,6 +21,14 @@ type QResult = {
   error?: string;
 };
 
+type Trace = {
+  span_id: string;
+  name: string;
+  status: string;
+  duration_ms: number | null;
+  attributes: Record<string, string>;
+};
+
 export default function Home() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -32,6 +40,8 @@ export default function Home() {
   const [results, setResults] = useState<QResult[]>([]);
   const [qLoading, setQLoading] = useState(false);
   const [qError, setQError] = useState("");
+
+  const [traces, setTraces] = useState<Trace[]>([]);
 
   async function ask() {
     setLoading(true);
@@ -110,6 +120,17 @@ export default function Home() {
     setResults((prev) =>
       prev.map((r) => (r.run_id === runId ? { ...r, status: "reviewed" } : r))
     );
+  }
+
+  async function loadTraces() {
+    try {
+      const res = await fetch(`${API_URL}/traces?limit=20`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setTraces(data.traces ?? []);
+    } catch {
+      // traces are optional — ignore fetch errors
+    }
   }
 
   return (
@@ -202,6 +223,27 @@ export default function Home() {
               <button onClick={() => markReviewed(r.run_id)} style={{ fontSize: 12, padding: "4px 10px" }}>
                 Mark reviewed
               </button>
+            )}
+          </div>
+        ))}
+      </section>
+
+      <section style={{ border: "1px solid #ddd", borderRadius: 8, padding: 16, marginTop: 24 }}>
+        <h2>Traces</h2>
+        <p style={{ color: "#555" }}>OpenTelemetry spans — see exactly where a tool call succeeded or failed.</p>
+        <button onClick={loadTraces} style={{ padding: "8px 16px", marginBottom: 12 }}>
+          Refresh traces
+        </button>
+        {traces.length === 0 && <p style={{ color: "#888" }}>No traces yet — ask a question, then refresh.</p>}
+        {traces.map((t, i) => (
+          <div key={i} style={{ borderTop: "1px solid #eee", padding: "8px 0", fontSize: 14 }}>
+            <span style={{ fontFamily: "monospace" }}>{t.name}</span>
+            <span style={{ marginLeft: 8, color: t.status === "error" ? "crimson" : "green" }}>{t.status}</span>
+            <span style={{ marginLeft: 8, color: "#888" }}>
+              {t.duration_ms != null ? `${t.duration_ms.toFixed(1)} ms` : ""}
+            </span>
+            {t.attributes?.question && (
+              <span style={{ marginLeft: 8, color: "#555" }}>“{t.attributes.question}”</span>
             )}
           </div>
         ))}

@@ -9,7 +9,7 @@ from .config import settings
 
 _client = OpenAI(
     base_url=settings.embedding_base_url or settings.llm_base_url,
-    api_key="ollama",  # key ignored by Ollama
+    api_key=settings.embedding_api_key,
 )
 
 
