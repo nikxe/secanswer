@@ -43,6 +43,11 @@ export default function Home() {
 
   const [traces, setTraces] = useState<Trace[]>([]);
 
+  const [docTitle, setDocTitle] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [uploadMsg, setUploadMsg] = useState("");
+  const [uploading, setUploading] = useState(false);
+
   async function ask() {
     setLoading(true);
     setError("");
@@ -133,6 +138,27 @@ export default function Home() {
     }
   }
 
+  async function uploadDocument() {
+    if (!docFile || !docTitle.trim()) return;
+    setUploading(true);
+    setUploadMsg("");
+    const fd = new FormData();
+    fd.append("title", docTitle.trim());
+    fd.append("file", docFile);
+    try {
+      const res = await fetch(`${API_URL}/documents/upload`, { method: "POST", body: fd });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setUploadMsg(`✓ Ingested "${data.title}" (${data.chunks} chunks)`);
+      setDocTitle("");
+      setDocFile(null);
+    } catch (e) {
+      setUploadMsg(`Error: ${e instanceof Error ? e.message : "upload failed"}`);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <main style={{ maxWidth: 860, margin: "0 auto", padding: 24, fontFamily: "system-ui, sans-serif" }}>
       <h1>SecAnswer</h1>
@@ -141,7 +167,34 @@ export default function Home() {
       </p>
 
       <section style={{ border: "1px solid #ddd", borderRadius: 8, padding: 16, marginBottom: 24 }}>
+        <h2>Add documents</h2>
+        <p style={{ color: "#555" }}>Upload a PDF or Markdown file to the knowledge base (re-upload with the same title to supersede it).</p>
+        <input
+          type="text"
+          value={docTitle}
+          onChange={(e) => setDocTitle(e.target.value)}
+          placeholder="Document title (e.g. Data Retention Policy)"
+          style={{ width: "100%", padding: 8, marginBottom: 8, fontSize: 15 }}
+        />
+        <input
+          type="file"
+          accept=".pdf,.md,.txt,.markdown"
+          onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+          style={{ marginBottom: 8 }}
+        />
+        <button
+          onClick={uploadDocument}
+          disabled={uploading || !docFile || !docTitle.trim()}
+          style={{ padding: "8px 16px" }}
+        >
+          {uploading ? "Ingesting…" : "Upload & ingest"}
+        </button>
+        {uploadMsg && <p style={{ marginTop: 8 }}>{uploadMsg}</p>}
+      </section>
+
+      <section style={{ border: "1px solid #ddd", borderRadius: 8, padding: 16, marginBottom: 24 }}>
         <h2>Ask a question</h2>
+        <p style={{ fontSize: 12, color: "#888", margin: "4px 0 8px" }}>First request may take ~1 min (cloud GPU cold start).</p>
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}

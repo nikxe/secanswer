@@ -1,11 +1,16 @@
 """FastAPI entrypoint."""
-from fastapi import FastAPI, HTTPException
+import os
+import tempfile
+from pathlib import Path
+
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from .db import get_conn
 from .graph import run
+from .ingestion import ingest as ingest_document
 from .questionnaire import answer_questionnaire, to_csv
 
 app = FastAPI(title="SecAnswer", version="0.2.0")
@@ -53,6 +58,20 @@ def chat(req: ChatRequest):
         citations=result["citations"],
         run_id=result["run_id"],
     )
+
+
+@app.post("/documents/upload")
+async def upload_document(title: str = Form(...), file: UploadFile = File(...)):
+    """Upload a PDF/Markdown file and ingest it (versioned, current-version wins)."""
+    suffix = Path(file.filename or "doc.md").suffix or ".md"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+    try:
+        n = ingest_document(tmp_path, title)
+        return {"title": title, "chunks": n, "status": "ingested"}
+    finally:
+        os.unlink(tmp_path)
 
 
 @app.post("/questionnaire")
