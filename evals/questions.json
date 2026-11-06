@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What is our data retention period?",
+    "title": "Data Retention Policy",
+    "expect_version": 2,
+    "answer_needles": ["seven", "7"]
+  },
+  {
+    "question": "How long are backups retained?",
+    "title": "Data Retention Policy",
+    "expect_version": 2,
+    "answer_needles": ["180"]
+  }
+]

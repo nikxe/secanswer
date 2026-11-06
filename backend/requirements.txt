@@ -1,0 +1,20 @@
+# Core API + orchestration
+fastapi==0.115.*
+uvicorn[standard]==0.34.*
+langgraph==0.2.*
+pydantic==2.*
+pydantic-settings==2.*
+python-dotenv==1.*
+
+# OpenAI-compatible client (talks to Ollama locally, or RunPod/vLLM in the cloud)
+openai==1.*
+
+# Postgres + pgvector
+psycopg[binary]==3.2.*
+
+# PDF parsing for ingestion
+pypdf==5.*
+
+# Observability (OpenTelemetry)
+opentelemetry-api==1.*
+opentelemetry-sdk==1.*

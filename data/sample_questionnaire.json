@@ -1,0 +1,9 @@
+{
+  "questions": [
+    "What is your data retention period for customer data?",
+    "How long are backups retained?",
+    "How quickly is customer data deleted after the retention period ends?",
+    "What is the purpose of your data retention policy?",
+    "Do you encrypt customer data at rest?"
+  ]
+}
